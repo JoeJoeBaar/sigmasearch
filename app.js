@@ -15,22 +15,43 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-  res.json({ name: "SigmaSearch", status: "online" });
+  res.json({
+    name: "SigmaSearch",
+    status: "online"
+  });
 });
 
-app.get("/api/search", (req, res) => {
-  const query = String(req.query.q || "").trim();
+app.get("/api/search", async (req, res) => {
+  const q = String(req.query.q || "").trim();
 
-  if (!query || query.length > 300) {
-    return res.status(400).json({ error: "Enter a search query under 300 characters." });
+  if (!q || q.length > 300) {
+    return res.status(400).json({
+      error: "Enter a search query."
+    });
   }
 
-  res.redirect(
-    302,
-    "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query)
-  );
+  try {
+    const url =
+      "https://puri.li/api/search?q=" +
+      encodeURIComponent(q);
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return res.status(502).json({
+        error: "Search provider failed. Try again."
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      error: "Could not retrieve search results."
+    });
+  }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`SigmaSearch running on port ${PORT}`);
+  console.log("SigmaSearch is running!");
 });
